@@ -8,6 +8,7 @@ from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from base64 import b64encode
 import os
+from flask_jwt_extended import create_access_token
 
 api = Blueprint('api', __name__)
 
@@ -69,7 +70,10 @@ def handle_login():
         else:
             if check_password(user.password, password, user.salt):
                 #debemos generar el token
-                return jsonify("haciendo todo lo posible"), 201
+                token = create_access_token(identity = user.id)
+                return jsonify({
+                    "token": token
+                }), 200
             else:
                 return jsonify("Bad credentials"), 400
 
