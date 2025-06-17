@@ -129,3 +129,27 @@ def reset_password():
         return jsonify("Message sended"), 200
     else:
         return jsonify("Error"), 200
+    
+@api.route("/update-password", methods=["PUT"])
+@jwt_required()
+def update_password():
+    user_token_email = get_jwt_identity()
+    password = request.json
+
+    user = User.query.filter_by(email=user_token_email).first()
+
+    if user is not None:
+        salt = b64encode(os.urandom(32)).decode("utf-8")
+        password = set_password(password, salt)
+
+        user.salt = salt
+        user.password = password
+
+        try:
+            db.session.commit()
+            return jsonify("password changed successfuly"), 201
+        except Exception as error:
+            db.session.rollback()
+            return jsonify("Error"), 500
+
+    print(user.serialize)
