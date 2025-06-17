@@ -3,12 +3,13 @@ This module takes care of starting the API Server, Loading the DB and Adding the
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
 from api.models import db, User
-from api.utils import generate_sitemap, APIException
+from api.utils import generate_sitemap, APIException, send_email
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from base64 import b64encode
 import os
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
+from datetime import timedelta
 
 api = Blueprint('api', __name__)
 
@@ -18,6 +19,9 @@ def set_password(password, salt):
 
 def check_password(pass_hash, password, salt):
     return check_password_hash(pass_hash, f"{password}{salt}")
+
+expire_minutes = 20
+expire_delta = timedelta(minutes=expire_minutes)
 
 
 # Allow CORS requests to this API
@@ -61,8 +65,8 @@ def handle_login():
     email = data.get("email", None)
     password = data.get("password", None)
 
-    if not email  or not password:
-        return jsonify("Necesitamos Email y password")
+    if not email or not password:
+        return jsonify("Necesitamos Email y password"), 400
     else:
         user = User.query.filter_by(email=email).first()
         if not user: 
@@ -70,10 +74,58 @@ def handle_login():
         else:
             if check_password(user.password, password, user.salt):
                 #debemos generar el token
-                token = create_access_token(identity = user.id)
+                token = create_access_token(identity = str(user.id))
                 return jsonify({
                     "token": token
                 }), 200
             else:
                 return jsonify("Bad credentials"), 400
 
+@api.route("/user", methods = ["GET"])
+@jwt_required()
+def get_all_user():
+    users = User.query.all()
+    return jsonify(list(map(lambda item: item.serialize(), users))), 200
+
+@api.route("/me", methods = ["GET"])
+@jwt_required()
+def get_me():
+    user_id = get_jwt_identity()
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify("User not found"), 400
+    
+    return jsonify(user.serialize()), 200
+
+@api.route("/reset-password", methods=["POST"])
+def reset_password():
+    # necesitamos el correo para evviar el link de recuperación
+    
+    email = request.json.get("email", None)
+    user = User.query.filter_by(email=email).one_or_none()
+
+    if user is None:
+        return jsonify("user not found"), 404
+
+    access_token = create_access_token(
+        identity=email, expires_delta=expire_delta)
+
+# https://studious-system-qp94qg9wwvp2xvpj-3000.app.github.dev/password-update?token=jdjdjdjdjdjdjdjdjd
+    message = f"""
+        <a href="{os.getenv("FRONTEND_URL")}/password-update?token={access_token}">recuperaar contraseña</a>
+    """
+
+    data = {
+        "subject": "Recuperación de contraseña",
+        "to": email,
+        "message": message
+    }
+
+    sended_email = send_email(
+        data.get("subject"), data.get("to"), data.get("message"))
+
+    if sended_email:
+        return jsonify("Message sended"), 200
+    else:
+        return jsonify("Error"), 200
