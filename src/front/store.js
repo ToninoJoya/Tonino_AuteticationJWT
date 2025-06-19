@@ -24,6 +24,11 @@ export default function storeReducer(store, action = {}) {
         ...store,
         message: action.payload
       };
+    case "LOGIN":
+      return {
+        ...store,
+        token : action.payload
+      };
       
     case 'add_task':
 

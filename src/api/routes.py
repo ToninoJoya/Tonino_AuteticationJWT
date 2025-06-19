@@ -48,6 +48,10 @@ def add_user():
     if email is None or password is None or lastname is None:
         return jsonify("Necesitas un email, password y lastname"), 400
     
+    existing_user = User.query.filter_by(email=email).first()
+    if existing_user:
+        return jsonify({"msg": "El correo electrónico ya está registrado"}), 400
+    
     user = User(email = email, lastname = lastname, password = set_password(password, salt), salt = salt)
 
     db.session.add(user)
