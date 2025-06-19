@@ -30,6 +30,7 @@ export const Login = () => {
             body: JSON.stringify(user)
         })
         const data = await response.json()
+        console.log(data.token)
         if (response.ok) {
       localStorage.setItem("token", data.token)
       dispatch({
@@ -56,7 +57,7 @@ export const Login = () => {
                     <form
                         onSubmit={handleSubmit}>
                         <div className="form-group mb-3">
-                            <label htmlfor="inputEmail" className="form-label">Email:</label>
+                            <label htmlFor="inputEmail" className="form-label">Email:</label>
                             <input
                                 type="text"
                                 id="inputEmail"
@@ -66,7 +67,7 @@ export const Login = () => {
                                 value={user.email} />
                         </div>
                         <div className="form-group mb-3">
-                            <label htmlfor="inputPassword5" className="form-label">Password:</label>
+                            <label htmlFor="inputPassword5" className="form-label">Password:</label>
                             <input
                                 type="password"
                                 id="inputPassword5"

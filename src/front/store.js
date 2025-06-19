@@ -13,7 +13,7 @@ export const initialStore=()=>{
         background: null,
       }
     ],
-    token: null
+    token: localStorage.getItem("token") || null,
   }
 }
 
@@ -28,6 +28,12 @@ export default function storeReducer(store, action = {}) {
       return {
         ...store,
         token : action.payload
+      };
+    case "LOGOUT":
+      localStorage.removeItem("token");
+      return {
+        ...store,
+        token: null 
       };
       
     case 'add_task':

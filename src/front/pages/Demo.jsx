@@ -28,6 +28,7 @@ export const Demo = () => {
     event.preventDefault()
     const backendUrl = import.meta.env.VITE_BACKEND_URL
 
+    
     const response = await fetch(`${backendUrl}/register`, {
       method: "POST",
       headers: {
